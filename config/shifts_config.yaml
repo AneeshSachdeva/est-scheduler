@@ -1,6 +1,7 @@
-shift_length_mins: 45
-max_signups_per_shift: 2
+shift_length_mins: 30 # The length of each signup shift
+max_signups_per_shift: 2 # Maximum number of medics allowed to concurrently signup for a shift
 
+# Allowed signup days. Specify the starting (inclusive) and ending hour (exclusive)
 shift_times:
-  saturday: [11, 12]
-  sunday: [11, 12]
+  Saturday: [11, 12]
+  Sunday: [11, 12]
