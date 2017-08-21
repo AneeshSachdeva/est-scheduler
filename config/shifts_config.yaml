@@ -1,0 +1,6 @@
+shift_length_mins: 45
+max_signups_per_shift: 2
+
+shift_times:
+  saturday: [11, 12]
+  sunday: [11, 12]

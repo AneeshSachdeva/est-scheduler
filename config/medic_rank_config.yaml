@@ -1,0 +1,8 @@
+# All possible medic ranks (to be scheduled)
+medic_ranks: ['1', '2', '3E', '3C']
+
+medic_signup_priority:
+  1: '1'
+  2: '2'
+  3: '3E'
+  4: '3C'
