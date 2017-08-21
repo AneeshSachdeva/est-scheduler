@@ -37,7 +37,7 @@ class Scheduler(object):
 
     def run(self):
         shifts_template = self.initialize_shifts(self.medics, self.shift_times, self.shift_length_mins, self.max_signups_per_shift, self.timezone_to_utc_offset)
-        self.schedule(self.medics, shifts_template)
+        schedule = self.schedule(self.medics, shifts_template)
 
 
     def schedule(self, medics, shifts_template):
@@ -67,8 +67,7 @@ class Scheduler(object):
                     shift_idx += 1
 
         print(shifts_template)
-
-
+        return shifts_template # this is now a schedule, not just a template
 
 
     def initialize_shifts(self, medics, shift_times, shift_length_mins, max_signups_per_shift, timezone_offest):
@@ -109,16 +108,17 @@ class Scheduler(object):
             raise # TODO: raise error properly
 
         # configure the shifts template as a pandas dataframe
-        columns = ['shift_time', 'medic_first_name', 'medic_last_name', 'medic_phone_number']
+        columns = ['shift_time_utc', 'shift_time_local', 'medic_first_name', 'medic_last_name', 'medic_phone_number']
         shift_template = pd.DataFrame(index=range(len(shifts) * max_signups_per_shift), columns=columns)
 
         idx = 0
-        for shift in shifts:
+        for shift_time in shifts:
             for jj in range(max_signups_per_shift):
-                shift_template.set_value(idx + jj, 'shift_time', shift)
+                shift_template.set_value(idx + jj, 'shift_time_local', shift_time)
+                shift_template.set_value(idx + jj, 'shift_time_utc', shift_time + datetime.timedelta(hours=self.timezone_to_utc_offset))
             idx += max_signups_per_shift
 
-        return shift_template.sort_values(by='shift_time', ascending=True).reset_index(drop=True)
+        return shift_template.sort_values(by='shift_time_local', ascending=True).reset_index(drop=True)
 
 
     def alert_medic(self, medic):
