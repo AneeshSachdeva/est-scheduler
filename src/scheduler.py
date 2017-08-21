@@ -54,13 +54,27 @@ class Scheduler(object):
                 medics_for_rank = medics_for_rank.sample(frac=1)
             priority_to_medics[key] = medics_for_rank
 
-        #print(priority_to_medics)
+        # TODO: Fill out shifts_template with priority_to_medics
+        shift_idx = 0
+        for key, value in priority_to_medics.iteritems():
+            # key is priority, value is pandas df of medics for that priority
+            if value.shape[0] > 0:
+                for idx, row in value.iterrows():
+                    # each row is a medic
+                    shifts_template.set_value(shift_idx, 'medic_first_name', row['first_name'])
+                    shifts_template.set_value(shift_idx, 'medic_last_name', row['last_name'])
+                    shifts_template.set_value(shift_idx, 'medic_phone_number', row['phone_number'])
+                    shift_idx += 1
+
+        print(shifts_template)
+
+
 
 
     def initialize_shifts(self, medics, shift_times, shift_length_mins, max_signups_per_shift, timezone_offest):
         """
         Initialize template of shifts to be filled out elsewhere.
-        @return: An "empty" pandas dataframe of shifts.
+        @return: An "empty" pandas dataframe of shifts, sorted by ascending signup time.
         """
         def find_next_weekday(weekday):
             """
@@ -96,12 +110,15 @@ class Scheduler(object):
 
         # configure the shifts template as a pandas dataframe
         columns = ['shift_time', 'medic_first_name', 'medic_last_name', 'medic_phone_number']
-        shift_template = pd.DataFrame(index=range(len(shifts)), columns=columns)
+        shift_template = pd.DataFrame(index=range(len(shifts) * max_signups_per_shift), columns=columns)
 
-        for ii in range(len(shifts)):
-            shift_template.set_value(ii, 'shift_time', shifts[ii])
+        idx = 0
+        for shift in shifts:
+            for jj in range(max_signups_per_shift):
+                shift_template.set_value(idx + jj, 'shift_time', shift)
+            idx += max_signups_per_shift
 
-        return shift_template.sort_values(by='shift_time', ascending=True)
+        return shift_template.sort_values(by='shift_time', ascending=True).reset_index(drop=True)
 
 
     def alert_medic(self, medic):
