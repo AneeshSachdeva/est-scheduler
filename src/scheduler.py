@@ -1,7 +1,7 @@
 from twilio.rest import Client
 from lib import lib
 import pandas as pd
-import time, datetime
+import time, datetime, threading
 
 # Load config params from yaml
 twilio_config = lib.load_yaml('twilio_config')
@@ -35,9 +35,23 @@ class Scheduler(object):
         self.twilio_client = Client(twilio_config['account_sid'], twilio_config['auth_token'])
 
 
-    def run(self):
+    def run(self, output_file_path):
         shifts_template = self.initialize_shifts(self.medics, self.shift_times, self.shift_length_mins, self.max_signups_per_shift, self.timezone_to_utc_offset)
         schedule = self.schedule(self.medics, shifts_template)
+        schedule.to_csv('{}.csv'.format(output_file_path)) # write schedule to human readable file
+
+        # schedule messaging
+        itr = 2
+        for shift_time in schedule['shift_time_utc'].unique():
+            print(shift_time)
+            medics_for_shift = schedule[(schedule['shift_time_utc'] == shift_time)
+                                        & (pd.isnull(schedule).any(axis=1) == False)]
+            now = datetime.datetime.utcnow()
+            #(shift_time - now).total_seconds()
+            t = threading.Timer(itr, self.message_medics, [], {'medics': medics_for_shift})
+            t.daemon = False # keep thread alive after main closes
+            t.start()
+            itr += 1
 
 
     def schedule(self, medics, shifts_template):
@@ -77,8 +91,8 @@ class Scheduler(object):
         """
         def find_next_weekday(weekday):
             """
-            @param weekday: weekday is 0 based (monday = 0).
-            @return: the date of the next occuring weekday. The date will be reset to the start of the day.
+            @param weekday: Weekday is 0 based (monday = 0).
+            @return: The date of the next occuring weekday. The date will be reset to the start of the day.
             """
             d = datetime.datetime.utcnow() - datetime.timedelta(hours=timezone_offest)
             while d.weekday() != weekday:
@@ -121,17 +135,23 @@ class Scheduler(object):
         return shift_template.sort_values(by='shift_time_local', ascending=True).reset_index(drop=True)
 
 
-    def alert_medic(self, medic):
+    def send_message(self, sender, recipient, body):
         """
         @param medic: A pandas dataframe row containing meta data of a medic.
         """
-        message = client.messages.create(
-            to=twilio_config['test_phone'],
-            from_=twilio_config['est_phone'],
+        message = self.twilio_client.messages.create(
+            to=recipient,
+            from_=sender,
             body='will I ever leave you'
         )
 
         print(message.sid)
+
+
+    def message_medics(self, *args, **kwargs):
+        medics_to_message = kwargs['medics']
+        for idx, row in medics_to_message.iterrows():
+            self.send_message(sender=twilio_config['est_phone'], recipient=row['medic_phone_number'], body='sign up, bitch')
 
 
     def configure_timezone(self, zone):
