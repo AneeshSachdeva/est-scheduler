@@ -36,7 +36,11 @@ class Scheduler(object):
 
 
     def run(self, output_file_path):
-        shifts_template = self.initialize_shifts(self.medics, self.shift_times, self.shift_length_mins, self.max_signups_per_shift, self.timezone_to_utc_offset)
+        shifts_template = self.initialize_shifts(self.medics,
+                                                self.shift_times,
+                                                self.shift_length_mins,
+                                                self.max_signups_per_shift,
+                                                self.timezone_to_utc_offset)
         schedule = self.schedule(self.medics, shifts_template)
         schedule.to_csv('{}.csv'.format(output_file_path)) # write schedule to human readable file
 
@@ -47,7 +51,7 @@ class Scheduler(object):
             medics_for_shift = schedule[(schedule['shift_time_utc'] == shift_time)
                                         & (pd.isnull(schedule).any(axis=1) == False)]
             now = datetime.datetime.utcnow()
-            #(shift_time - now).total_seconds()
+            seconds_till_send = (shift_time - now).total_seconds()
             t = threading.Timer(itr, self.message_medics, [], {'medics': medics_for_shift})
             t.daemon = False # keep thread alive after main closes
             t.start()
@@ -75,10 +79,11 @@ class Scheduler(object):
             if value.shape[0] > 0:
                 for idx, row in value.iterrows():
                     # each row is a medic
-                    shifts_template.set_value(shift_idx, 'medic_first_name', row['first_name'])
-                    shifts_template.set_value(shift_idx, 'medic_last_name', row['last_name'])
-                    shifts_template.set_value(shift_idx, 'medic_phone_number', row['phone_number'])
-                    shift_idx += 1
+                    if row['good_standing'] is True:
+                        shifts_template.set_value(shift_idx, 'medic_first_name', row['first_name'])
+                        shifts_template.set_value(shift_idx, 'medic_last_name', row['last_name'])
+                        shifts_template.set_value(shift_idx, 'medic_phone_number', row['phone_number'])
+                        shift_idx += 1
 
         print(shifts_template)
         return shifts_template # this is now a schedule, not just a template
@@ -142,7 +147,7 @@ class Scheduler(object):
         message = self.twilio_client.messages.create(
             to=recipient,
             from_=sender,
-            body='will I ever leave you'
+            body='will I ever leave you, the answer is no no no no no no'
         )
 
         print(message.sid)
@@ -151,7 +156,8 @@ class Scheduler(object):
     def message_medics(self, *args, **kwargs):
         medics_to_message = kwargs['medics']
         for idx, row in medics_to_message.iterrows():
-            self.send_message(sender=twilio_config['est_phone'], recipient=row['medic_phone_number'], body='sign up, bitch')
+            if row['medic_phone_number']:
+                self.send_message(sender=twilio_config['est_phone'], recipient=row['medic_phone_number'], body='sign up, bitch')
 
 
     def configure_timezone(self, zone):
