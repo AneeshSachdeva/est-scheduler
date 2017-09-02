@@ -36,6 +36,10 @@ class Scheduler(object):
 
 
     def run(self, output_file_path):
+        """
+        Main loop of the scheduler.
+        @param output_file_path: The file path for the filled out shift schedule as a csv.
+        """
         shifts_template = self.initialize_shifts(self.medics,
                                                 self.shift_times,
                                                 self.shift_length_mins,
@@ -45,14 +49,14 @@ class Scheduler(object):
         schedule.to_csv('{}.csv'.format(output_file_path)) # write schedule to human readable file
 
         # schedule messaging
-        itr = 2
+        itr = 2 # for testing
         for shift_time in schedule['shift_time_utc'].unique():
             print(shift_time)
             medics_for_shift = schedule[(schedule['shift_time_utc'] == shift_time)
                                         & (pd.isnull(schedule).any(axis=1) == False)]
             now = datetime.datetime.utcnow()
             seconds_till_send = (shift_time - now).total_seconds()
-            t = threading.Timer(itr, self.message_medics, [], {'medics': medics_for_shift})
+            t = threading.Timer(seconds_till_send, self.message_medics, [], {'medics': medics_for_shift})
             t.daemon = False # keep thread alive after main closes
             t.start()
             itr += 1
