@@ -119,6 +119,7 @@ class Scheduler(object):
         num_total_shifts = 0
         iter_shift = None
         for key, value in shift_times.iteritems():
+            print(key, value)
             # key is day, value is array of min hour and max hour
             # number of shifts for current day
             num_shifts = (value[1] - value[0]) * 60 / shift_length_mins # don't convert to float, we want quotient to be floored
@@ -136,7 +137,7 @@ class Scheduler(object):
         # TODO: parameterize signups per medic (currently 2)
         if medics[medics['good_standing'] == True].shape[0] * 2 / max_signups_per_shift > num_total_shifts * max_signups_per_shift:
             print(medics[medics['good_standing'] == True].shape[0] * 2 / max_signups_per_shift)
-            print(num_total_shifts)
+            print(num_total_shifts * max_signups_per_shift)
             print('ERROR: Not enough shifts to schedule all medics in good standing. Either add shifts or increase max_signups_per_shift.')
             raise # TODO: raise error properly
 
