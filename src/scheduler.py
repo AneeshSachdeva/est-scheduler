@@ -88,6 +88,13 @@ class Scheduler(object):
                         shifts_template.set_value(shift_idx, 'medic_last_name', row['last_name'])
                         shifts_template.set_value(shift_idx, 'medic_phone_number', row['phone_number'])
                         shift_idx += 1
+                for idx, row in value[::-1].iterrows():
+                    # reverse the order
+                    if row['good_standing'] is True:
+                        shifts_template.set_value(shift_idx, 'medic_first_name', row['first_name'])
+                        shifts_template.set_value(shift_idx, 'medic_last_name', row['last_name'])
+                        shifts_template.set_value(shift_idx, 'medic_phone_number', row['phone_number'])
+                        shift_idx += 1
 
         print(shifts_template)
         return shifts_template # this is now a schedule, not just a template
@@ -126,7 +133,7 @@ class Scheduler(object):
             num_total_shifts += num_shifts
 
         # make sure that we have enough shifts to schedule all medics
-        if medics[medics['good_standing'] == True].shape[0] > num_total_shifts * max_signups_per_shift:
+        if medics[medics['good_standing'] == True].shape[0] * 2 > num_total_shifts * max_signups_per_shift:
             print('ERROR: Not enough shifts to schedule all medics in good standing. Either add shifts or increase max_signups_per_shift.')
             raise # TODO: raise error properly
 
@@ -151,17 +158,18 @@ class Scheduler(object):
         message = self.twilio_client.messages.create(
             to=recipient,
             from_=sender,
-            body='will I ever leave you, the answer is no no no no no no'
+            body=body
         )
 
-        print(message.sid)
+        print(datetime.datetime.utcnow(), message.sid)
 
 
     def message_medics(self, *args, **kwargs):
         medics_to_message = kwargs['medics']
         for idx, row in medics_to_message.iterrows():
             if row['medic_phone_number']:
-                self.send_message(sender=twilio_config['est_phone'], recipient=row['medic_phone_number'], body='sign up, bitch')
+                message_body = 'Hey narc, time to sign for a shift. You have %d minutes. \n http://est.wustl.edu/shift_scheduler' % self.shift_length_mins
+                self.send_message(sender=twilio_config['est_phone'], recipient=row['medic_phone_number'], body=message_body)
 
 
     def configure_timezone(self, zone):

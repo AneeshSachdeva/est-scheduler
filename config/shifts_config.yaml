@@ -3,6 +3,7 @@ max_signups_per_shift: 2 # Maximum number of medics allowed to concurrently sign
 
 # Allowed signup days. Specify the starting (inclusive) and ending hour (exclusive)
 shift_times:
-  Friday: [21, 22]
+  #Thursday: [1, 13]
+  #Friday: [10, 19]
   #Saturday: [11, 12]
-  #Sunday: [11, 12]
+  Sunday: [11, 21]
