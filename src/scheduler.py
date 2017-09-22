@@ -133,7 +133,9 @@ class Scheduler(object):
             num_total_shifts += num_shifts
 
         # make sure that we have enough shifts to schedule all medics
-        if medics[medics['good_standing'] == True].shape[0] * 2 > num_total_shifts * max_signups_per_shift:
+        if medics[medics['good_standing'] == True].shape[0] * 2 / max_signups_per_shift > num_total_shifts:
+            print(medics[medics['good_standing'] == True].shape[0] * 2 / max_signups_per_shift)
+            print(num_total_shifts)
             print('ERROR: Not enough shifts to schedule all medics in good standing. Either add shifts or increase max_signups_per_shift.')
             raise # TODO: raise error properly
 
