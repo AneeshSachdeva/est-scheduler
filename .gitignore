@@ -1,4 +1,4 @@
 *.pem
 *.pyc
-directory.csv
+*.csv
 twilio_config.yaml
